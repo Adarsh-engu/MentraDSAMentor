@@ -1,7 +1,0 @@
-[build]
-builder = "NIXPACKS"
-watchPatterns = ["backend/**"]
-
-[deploy]
-startCommand = "cd backend && celery -A app.worker.celery_app worker --loglevel=info"
-restartPolicyType = "ON_FAILURE"
