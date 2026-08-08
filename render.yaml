@@ -1,0 +1,74 @@
+services:
+  # 1. Private Service for ChromaDB Vector Database
+  - type: pserv
+    name: algo-mentor-chroma
+    env: docker
+    repo: https://github.com/chroma-core/chroma
+    branch: main
+    dockerContext: .
+    disk:
+      name: chroma-data
+      mountPath: /chroma/chroma
+      sizeGB: 1
+    envVars:
+      - key: IS_PERSISTENT
+        value: "TRUE"
+
+  # 2. Redis Instance for Celery Queues and Caching
+  - type: redis
+    name: algo-mentor-redis
+    ipAllowList: [] # internal only
+    plan: free
+
+  # 3. Web Service for FastAPI Backend
+  - type: web
+    name: algo-mentor-api
+    env: python
+    buildCommand: "cd backend && pip install -r requirements.txt"
+    startCommand: "cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: algo-mentor-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: algo-mentor-redis
+          property: connectionString
+      - key: CHROMA_URL
+        value: http://algo-mentor-chroma:8000
+      - key: GROQ_API_KEY
+        sync: false
+      - key: AUTH_SECRET
+        sync: false
+
+  # 4. Celery Worker
+  - type: worker
+    name: algo-mentor-celery
+    env: python
+    buildCommand: "cd backend && pip install -r requirements.txt"
+    startCommand: "cd backend && celery -A app.worker.celery_app worker --loglevel=info"
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: algo-mentor-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: algo-mentor-redis
+          property: connectionString
+      - key: CHROMA_URL
+        value: http://algo-mentor-chroma:8000
+      - key: GROQ_API_KEY
+        sync: false
+      - key: AUTH_SECRET
+        sync: false
+
+databases:
+  # 5. PostgreSQL Database
+  - name: algo-mentor-db
+    databaseName: algo_mentor
+    user: mentor_user
+    plan: free
