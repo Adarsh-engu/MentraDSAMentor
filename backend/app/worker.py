@@ -71,7 +71,16 @@ def sync_platforms_task(user_id: str):
                 
                 if existing_sub:
                     # If it exists, update it only if the new submission is more recent
-                    if sub_data["submitted_at"] and (not existing_sub.submitted_at or sub_data["submitted_at"] > existing_sub.submitted_at):
+                    new_submitted_at = sub_data["submitted_at"]
+                    old_submitted_at = existing_sub.submitted_at
+                    
+                    if new_submitted_at and old_submitted_at:
+                        if new_submitted_at.tzinfo:
+                            new_submitted_at = new_submitted_at.replace(tzinfo=None)
+                        if old_submitted_at.tzinfo:
+                            old_submitted_at = old_submitted_at.replace(tzinfo=None)
+                            
+                    if new_submitted_at and (not old_submitted_at or new_submitted_at > old_submitted_at):
                         existing_sub.status = sub_data["status"]
                         existing_sub.language = sub_data["language"]
                         existing_sub.submitted_at = sub_data["submitted_at"]
