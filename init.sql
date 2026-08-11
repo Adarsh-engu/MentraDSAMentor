@@ -86,6 +86,7 @@ CREATE TABLE user_platforms (
   user_id uuid NOT NULL,
   platform_id uuid NOT NULL,
   handle VARCHAR(255) NOT NULL,
+  auth_token TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   PRIMARY KEY (id),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
